@@ -62,11 +62,12 @@ pipeline {
 
     post {
         always {
+            echo '=== POST ACTIONS ==='
             archiveArtifacts artifacts: 'trivy-report.txt', allowEmptyArchive: true
         }
+
         failure {
             echo 'Build failed'
         }
     }
 }
-``

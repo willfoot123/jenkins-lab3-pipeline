@@ -6,25 +6,27 @@ pipeline {
         stage('Build') {
             steps {
                 echo '=== BUILD STAGE ==='
-                pwd
-                ls -la
-                touch build.txt
+                sh 'pwd'
+                sh 'ls -la'
+                sh 'touch build.txt'
+                sh 'echo "Build complete"'
             }
         }
 
         stage('Test') {
             steps {
                 echo '=== TEST STAGE ==='
-                ls -la
-                mv build.txt test.txt
+                sh 'ls -la'
+                sh 'mv build.txt test.txt'
+                sh 'echo "Test complete"'
             }
         }
 
         stage('Deploy') {
             steps {
                 echo '=== DEPLOY STAGE ==='
-                echo 'Simulating deployment'
-                ls -la
+                sh 'ls -la'
+                sh 'echo "Deployment simulation complete"'
             }
         }
     }

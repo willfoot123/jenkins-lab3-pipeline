@@ -1,33 +1,72 @@
 pipeline {
-    agent any
+    agent { label 'worker' }
+
+    options {
+        timestamps()
+    }
 
     stages {
+
+        stage('Init') {
+            steps {
+                echo '=== INIT STAGE ==='
+                sh '''
+                    docker network ls | grep lab-net || docker network create lab-net
+                    docker volume ls | grep lab-vol || docker volume create lab-vol
+                '''
+            }
+        }
 
         stage('Build') {
             steps {
                 echo '=== BUILD STAGE ==='
-                sh 'pwd'
-                sh 'ls -la'
-                sh 'touch build.txt'
-                sh 'echo "Build complete"'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                echo '=== TEST STAGE ==='
-                sh 'ls -la'
-                sh 'mv build.txt test.txt'
-                sh 'echo "Test complete"'
+                sh 'docker build -t task1-app ./Task1'
             }
         }
 
         stage('Deploy') {
             steps {
                 echo '=== DEPLOY STAGE ==='
-                sh 'ls -la'
-                sh 'echo "Deployment simulation complete"'
+                sh '''
+                    docker rm -f task1-container || true
+                    docker run -d --name task1-container \
+                        --network lab-net \
+                        -p 8081:80 task1-app
+                '''
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                echo '=== UNIT TESTS ==='
+                sh '''
+                    chmod +x tests/test.sh
+                    ./tests/test.sh
+                '''
+            }
+        }
+
+        stage('Trivy Scan') {
+            steps {
+                echo '=== TRIVY SCAN ==='
+                sh 'trivy fs . --format table --output trivy-report.txt'
+            }
+        }
+
+        stage('Approval') {
+            steps {
+                input message: 'Approve deployment after scan?'
             }
         }
     }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'trivy-report.txt', allowEmptyArchive: true
+        }
+        failure {
+            echo 'Build failed'
+        }
+    }
 }
+``
